@@ -1,12 +1,13 @@
-﻿#if UNITY_EDITOR
+﻿// ========================================================
+// Describe  ：ButtonAttribute
+//             自定义Button按钮，替代ContexMenuItem
+// Author    : Garson
+// CreateTime: 2017/12/02
+// Version   : v1.0
+// ========================================================
+#if UNITY_EDITOR
 using System;
 
-/// <summary>
-/// Introduction: ButtonAttribute
-///             自定义Button按钮，替代ContexMenuItem
-/// Author: 	刘家诚
-/// Time: 
-/// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public class ButtonAttribute : Attribute
 {

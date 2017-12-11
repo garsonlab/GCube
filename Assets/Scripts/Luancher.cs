@@ -1,12 +1,13 @@
-﻿using System.Collections;
+﻿// ========================================================
+// Describe  ：Luancher
+// Author    : Garson
+// CreateTime: 2017/12/02
+// Version   : v1.0
+// ========================================================
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Introduction: Luancher
-/// Author: 	刘家诚
-/// Time: 
-/// </summary>
 public class Luancher : MonoBehaviour {
 
 	// Use this for initialization

@@ -1,14 +1,15 @@
-﻿using System.Collections;
+﻿// ========================================================
+// Describe  ：AppFacade
+// Author    : Garson
+// CreateTime: 2017/12/02
+// Version   : v1.0
+// ========================================================
+using System.Collections;
 using System.Collections.Generic;
 using PureMVC.Interfaces;
 using PureMVC.Patterns;
 using UnityEngine;
 
-/// <summary>
-/// Introduction: AppFacade
-/// Author: 	刘家诚
-/// Time: 
-/// </summary>
 public class AppFacade : Facade 
 {
 

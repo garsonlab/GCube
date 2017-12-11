@@ -1,12 +1,13 @@
-﻿using System.Collections;
+﻿// ========================================================
+// Describe  ：GManager
+// Author    : Garson
+// CreateTime: 2017/12/02
+// Version   : v1.0
+// ========================================================
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Introduction: GManager
-/// Author: 	刘家诚
-/// Time: 
-/// </summary>
 public class GManager : MonoBehaviour
 {
     public Material[] materials;
@@ -42,8 +43,8 @@ public class GManager : MonoBehaviour
                 obj.transform.SetParent(parent);
                 obj.transform.localPosition = new Vector3(i, j, 0);
 
-                var index = Random.Range(0, materials.Length);
-                obj.GetComponent<Renderer>().material = materials[index];
+                //var index = Random.Range(0, materials.Length);
+                //obj.GetComponent<Renderer>().material = materials[index];
             }
         }
     }

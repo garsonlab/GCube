@@ -10,35 +10,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Timer : ITimer
+public class Timer : IManager<Timer>, ITimer
 {
-    static Timer instance;
-
-    public static Timer Instance
-    {
-        get
-        {
-            if (instance == null)
-            {
-                instance = new Timer();
-                //ToDo: add OnUpdate to MonoBehavior's Update
-            }
-            return instance;
-        }
-    }
     Dictionary<uint, TimerData> m_Timers;
     List<uint> m_Removes;
+    Queue<TimerData> m_TimerCache; 
     uint timerId;
 
-    Timer()
+    public override void Init()
     {
-        instance = this;
         m_Timers = new Dictionary<uint, TimerData>();
         m_Removes = new List<uint>();
+        m_TimerCache = new Queue<TimerData>();
         timerId = 0;
     }
 
-    void OnUpdate()
+    public void OnUpdate()
     {
         var enumerator = m_Timers.GetEnumerator();
         while (enumerator.MoveNext())
@@ -50,7 +37,9 @@ public class Timer : ITimer
 
         for (int i = 0; i < m_Removes.Count; i++)
         {
+            var timer = m_Timers[m_Removes[i]];
             m_Timers.Remove(m_Removes[i]);
+            m_TimerCache.Enqueue(timer);
         }
         m_Removes.Clear();
     }
@@ -73,7 +62,8 @@ public class Timer : ITimer
     }
     public TimerData RepeatedCall(int times, float delay, float interval, bool ignoreTimeScale, TimerCallback callback, params object[] parms)
     {
-        var timer = new TimerData(timerId++,times, delay, interval, ignoreTimeScale, callback, parms);
+        var timer = GetAvailableTimerData();
+        timer.Init(timerId++,times, delay, interval, ignoreTimeScale, callback, parms);
         m_Timers.Add(timer.Id, timer);
         return timer;
     }
@@ -97,6 +87,12 @@ public class Timer : ITimer
         if (m_Timers.TryGetValue(timerId, out timer))
             return timer;
         return null;
+    }
+
+    private TimerData GetAvailableTimerData()
+    {
+        TimerData timer = m_TimerCache.Count > 0 ? m_TimerCache.Dequeue() : new TimerData();
+        return timer;
     }
 }
 

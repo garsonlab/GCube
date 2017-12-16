@@ -26,7 +26,9 @@ public class TimerData
     private float m_curTimer;
     private bool m_inDelay;
 
-    public TimerData(uint index, int times, float delay, float interval, bool ignoreTimeScale, TimerCallback callback, params object[] parms)
+    public TimerData() { }
+
+    public void Init(uint index, int times, float delay, float interval, bool ignoreTimeScale, TimerCallback callback, params object[] parms)
     {
         this.index = index;
         this.times = times;

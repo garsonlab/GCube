@@ -18,7 +18,9 @@ public class InitEndCommand : SimpleCommand
         AppFacade.Instance.RegisterProxy(new PlayerProxy());
         AppFacade.Instance.RegisterProxy(new LevelProxy());
 
+        AppFacade.Instance.RegisterMediator(new LevelMediator(new LevelManager()));
+        //init ui
 
-
+        SendNotification(MsgType.LEVEL_START, 1);
     }
 }

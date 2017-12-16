@@ -36,6 +36,7 @@ public class AppFacade : Facade
         //ToDo 初始化其他的资源加载
 
         RegisterCommand(MsgType.INIT_END, typeof(InitEndCommand));
+        RegisterCommand(MsgType.LEVEL_START, typeof(LevelStartCommand));
     }
 
 

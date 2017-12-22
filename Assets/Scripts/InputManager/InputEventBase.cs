@@ -25,7 +25,7 @@ namespace Garson.Scripts
 
         public InputEventBase()
         {
-            m_moveTolerace = 30f;
+            m_moveTolerace = 10f;
             m_longPressSpan = 0.5f;
             Reset();
         }

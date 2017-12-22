@@ -15,6 +15,7 @@ public class Launcher : MonoBehaviour
     {
         Timer.Instance.Init();
         InputManager.Instance.Init();
+        GUIManager.Instance.Init();
 		AppFacade.Instance.Start();
 
         //InputManager.Instance.AddListener((InputType)0, parm1 =>
@@ -59,7 +60,11 @@ public class Launcher : MonoBehaviour
     void Update()
     {
         Timer.Instance.OnUpdate();
+    }
 
+    void OnGUI()
+    {
+        GUIManager.Instance.Drawing();
     }
 
 }

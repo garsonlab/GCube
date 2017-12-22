@@ -12,36 +12,57 @@ using UnityEngine;
 
 public class Timer : IManager<Timer>, ITimer
 {
-    Dictionary<uint, TimerData> m_Timers;
-    List<uint> m_Removes;
-    Queue<TimerData> m_TimerCache; 
+    Dictionary<uint, TimerData> m_timers;
+    List<TimerData> m_toRemove;
+    List<TimerData> m_toAdd;
+    ObjectPool<TimerData> m_timerPool;
     uint timerId;
 
     public override void Init()
     {
-        m_Timers = new Dictionary<uint, TimerData>();
-        m_Removes = new List<uint>();
-        m_TimerCache = new Queue<TimerData>();
+        m_timers = new Dictionary<uint, TimerData>();
+        m_toRemove = new List<TimerData>();
+        m_toAdd = new List<TimerData>();
+        m_timerPool = new ObjectPool<TimerData>(() => new TimerData(), null, null, null);
         timerId = 0;
     }
 
     public void OnUpdate()
     {
-        var enumerator = m_Timers.GetEnumerator();
-        while (enumerator.MoveNext())
+        if (m_timers.Count > 0)
         {
-            enumerator.Current.Value.OnUpdate();
-            if(enumerator.Current.Value.IsDone)
-                m_Removes.Add(enumerator.Current.Value.Id);
+            var enumerator = m_timers.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (enumerator.Current.Value.IsDone)
+                    m_toRemove.Add(enumerator.Current.Value);
+                else
+                    enumerator.Current.Value.OnUpdate();
+            }
+            enumerator.Dispose();
         }
 
-        for (int i = 0; i < m_Removes.Count; i++)
+        int removeLen = m_toRemove.Count;
+        if (removeLen > 0)
         {
-            var timer = m_Timers[m_Removes[i]];
-            m_Timers.Remove(m_Removes[i]);
-            m_TimerCache.Enqueue(timer);
+            for (int i = 0; i < removeLen; i++)
+            {
+                TimerData timer = m_toRemove[i];
+                m_timers.Remove(timer.Id);
+                m_timerPool.Release(timer);
+            }
+            m_toRemove.Clear();
         }
-        m_Removes.Clear();
+
+        int addLen = m_toAdd.Count;
+        if (addLen > 0)
+        {
+            for (int i = 0; i < addLen; i++)
+            {
+                m_timers.Add(m_toAdd[i].Id, m_toAdd[i]);
+            }
+            m_toAdd.Clear();
+        }
     }
 
 
@@ -62,9 +83,15 @@ public class Timer : IManager<Timer>, ITimer
     }
     public TimerData RepeatedCall(int times, float delay, float interval, bool ignoreTimeScale, TimerCallback callback, params object[] parms)
     {
-        var timer = GetAvailableTimerData();
+        if (callback == null)
+        {
+            Debug.Log("Timer Callback can not be null! ");
+            return null;
+        }
+
+        var timer = m_timerPool.Get();
         timer.Init(timerId++,times, delay, interval, ignoreTimeScale, callback, parms);
-        m_Timers.Add(timer.Id, timer);
+        m_toAdd.Add(timer);
         return timer;
     }
 
@@ -84,16 +111,11 @@ public class Timer : IManager<Timer>, ITimer
     public TimerData GetTimerData(uint timerId)
     {
         TimerData timer;
-        if (m_Timers.TryGetValue(timerId, out timer))
+        if (m_timers.TryGetValue(timerId, out timer))
             return timer;
         return null;
     }
 
-    private TimerData GetAvailableTimerData()
-    {
-        TimerData timer = m_TimerCache.Count > 0 ? m_TimerCache.Dequeue() : new TimerData();
-        return timer;
-    }
 }
 
 public delegate void TimerCallback(params object[] objs);

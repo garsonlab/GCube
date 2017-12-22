@@ -8,12 +8,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-//public class CallbackFunctions
-//{
-
-
-//}
 
 public delegate void Callback_0();
 
 public delegate void Callback_1<T>(T parm1);
+
+public delegate T T_Callback<T>();

@@ -24,7 +24,7 @@ public class LevelMediator : Mediator
         var obj = GameObject.Find("Cubes");
         if (obj == null)
             obj = new GameObject("Cubes");
-        obj.transform.position = new Vector3(-3, -3);
+        obj.transform.position = Vector3.zero;//   new Vector3(-3, -3);
         manager.Init(obj.transform);
     }
 
@@ -40,7 +40,8 @@ public class LevelMediator : Mediator
         return new List<string>()
         {
             MsgType.SELECT_CHANGED,
-            MsgType.SELECT_END
+            MsgType.CHANGE_CUBE,
+            MsgType.ADD_CUBE
         };
     }
 
@@ -51,14 +52,30 @@ public class LevelMediator : Mediator
         {
             case MsgType.SELECT_CHANGED:
                 break;
-            case MsgType.SELECT_END:
+            case MsgType.CHANGE_CUBE:
+                manager.ChangeCubes((List<Point>)notification.Body);
+                break;
+            case MsgType.ADD_CUBE:
+                manager.AddCubes((List<Point>) notification.Body);
                 break;
         }
     }
+
+    private void OnSelectEnd()
+    {
+        //关掉线
+
+    }
+
     public void StartLevel()
     {
         LevelData data = proxy.GetLevelData();
         manager.LoadLevel(data);
+    }
+
+    public void AddNewData(List<Point> adds)
+    {
+        
     }
 
     public void DestroyLevel()

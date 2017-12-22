@@ -27,11 +27,20 @@ public class MsgType
     /// </summary>
     public const string SELECT_CHANGED = "select_change";
     /// <summary>
-    /// 操作结束
+    /// 方块改变
     /// </summary>
-    public const string SELECT_END = "selet_end";
+    public const string CHANGE_CUBE = "change_cube";
     /// <summary>
     /// 游戏结束
     /// </summary>
     public const string GAME_END = "game_end";
+    /// <summary>
+    /// 角色移动
+    /// </summary>
+    public const string PLAYER_MOVE = "player_move";
+    /// <summary>
+    /// 添加新的方块
+    /// </summary>
+    public const string ADD_CUBE = "add_cube";
+
 }

@@ -14,6 +14,7 @@ public class LevelProxy : Proxy
 {
     public new const string NAME = "LevelProxy";
 
+    private ObjectPool<Point> m_pointPool; 
     private LevelData m_levelData;
     private List<Point> m_selectPoints;
     private List<Point> m_changePoints; 
@@ -21,6 +22,7 @@ public class LevelProxy : Proxy
 
     public LevelProxy() : base(NAME, null)
     {
+        m_pointPool = new ObjectPool<Point>(() => new Point(), null, null, point => point.Destroy());
         m_selectPoints = new List<Point>();
         m_changePoints = new List<Point>();
         m_lastOperate = new Point();
@@ -31,26 +33,9 @@ public class LevelProxy : Proxy
     /// </summary>
     /// <param name="level"></param>
     /// <returns></returns>
-    public LevelData LoadLevelData(uint level)
+    public LevelData LoadLevelData(int level)
     {
-        int[,] levelData = new int[20, 15];
-        for (int i = 0; i < 20; i++)
-        {
-            var max = 7;
-            if (i < 10)
-                max = 6;
-
-            var height = Random.Range(2, max);
-            for (int j = 0; j < 15; j++)
-            {
-                if (j < height)
-                    levelData[i, j] = Random.Range(1, 7);
-                else
-                    levelData[i, j] = 0;
-            }
-        }
-        m_levelData = new LevelData(1, levelData, 20, 15);
-
+        m_levelData = new LevelData(level, m_pointPool);
         return m_levelData;
     }
     /// <summary>
@@ -60,11 +45,6 @@ public class LevelProxy : Proxy
     public LevelData GetLevelData()
     {
         return m_levelData;
-    }
-
-    public void OnSelectEnd()
-    {
-        
     }
 
     public void DestroyLevel()
@@ -80,7 +60,9 @@ public class LevelProxy : Proxy
         InputManager.Instance.AddListener(InputType.OnMoveBegin, OnTouchMoveBegin);
         InputManager.Instance.AddListener(InputType.OnMove, OnTouchMove);
         InputManager.Instance.AddListener(InputType.OnMoveEnd, OnTouchMoveEnd);
+        GUIManager.Instance.AddDrawer(NAME, OnMoveDrawer);
     }
+   
     /// <summary>
     /// 移除输入监听
     /// </summary>
@@ -94,27 +76,37 @@ public class LevelProxy : Proxy
     private void OnTouchMoveBegin(Vector3 pos)
     {
         m_selectPoints.Clear();
-        m_lastOperate.Reset();
+        m_lastOperate = null;
     }
 
     private void OnTouchMove(Vector3 pos)
     {
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(pos);
-        int x = Mathf.CeilToInt(worldPos.x)+3;
-        int y = Mathf.CeilToInt(worldPos.y)+3;
-        if(m_lastOperate.EqualTo(x, y))//与上次操作相同
+        int x = Mathf.CeilToInt(worldPos.x+2.5f);
+        int y = Mathf.CeilToInt(worldPos.y+2.5f);
+        curpos.x = x;
+        curpos.y = y;
+        if (m_lastOperate != null && m_lastOperate.EqualTo(x, y)) //与上次操作相同
+        {
+            //Debug.Log("位置没变");
             return;
-
-        if(!m_lastOperate.IsNeighbor(x, y))//不是第一个点或上一点的周围
+        }
+        if (m_lastOperate != null && !m_lastOperate.IsNeighbor(x, y)) //不是第一个点或上一点的周围
+        {
+            //Debug.Log("不是相邻");
             return;
-
-        int v = m_levelData.GetPointValue(x, y);//当前操作有意义,小于0表示选择的是空白
-        if(v <= 0)
+        }
+        Point point = m_levelData.GetPoint(x, y);//获取当前操作到对象
+        if (point == null)
+        {
+            //Debug.Log("操作为空");
             return;
-
-        if(!m_lastOperate.IsSimilarTo(v))//和上次选择的类型不同（此处可扩展）
+        }
+        if (m_lastOperate != null && !m_lastOperate.IsSimilarTo(point.value)) //和上次选择的类型不同（此处可扩展）
+        {
+            //Debug.Log("不同颜色");
             return;
-
+        }
         int existIndex = -1;
         for (int i = m_selectPoints.Count-1; i >= 0; i--)
         {
@@ -125,114 +117,73 @@ public class LevelProxy : Proxy
             }
         }
 
-
         if (existIndex >= 0)
         {
+            //目前判断只能顺序移除，如选择多个后从其他地方绕到第一个则不会响应
             //如果在列表中已存在， 直接移除其后
-            for (int i = m_selectPoints.Count - 1; i >= existIndex; i--)
+            for (int i = m_selectPoints.Count - 1; i > existIndex; i--)
             {
                 m_selectPoints.RemoveAt(i);
             }
         }
         else
         {
-            var point = new Point()
-            {
-                x = x,
-                y = y,
-                value = v
-            };
+            //Debug.Log("Add");
             m_selectPoints.Add(point);
         }
+        m_lastOperate = point;
 
         SendNotification(MsgType.SELECT_CHANGED, m_selectPoints);
     }
 
     private void OnTouchMoveEnd(Vector3 pos)
     {
-        if (m_selectPoints.Count > 2)
+        if (m_selectPoints.Count > 1)
         {
             for (int i = 0; i < m_selectPoints.Count; i++)
             {
-                m_levelData.RemovePointData(m_selectPoints[i].x, m_selectPoints[i].y);
+                m_levelData.RemovePoint(m_selectPoints[i]);
             }
+
             m_changePoints.Clear();
             m_levelData.GetChanges(m_changePoints);
 
-            SendNotification(MsgType.SELECT_END, m_changePoints);
+            SendNotification(MsgType.CHANGE_CUBE, m_changePoints);
         }
     }
-}
 
 
-public class Point
-{
-    /// <summary>
-    /// Pos X
-    /// </summary>
-    public int x;
-    /// <summary>
-    /// Pos Y
-    /// </summary>
-    public int y;
-
-    /// <summary>
-    /// If more than 0, it's target Y. Otherwise less than 0 marked as delete
-    /// </summary>
-    public int targetY;
-    /// <summary>
-    /// Block value type
-    /// </summary>
-    public int value;
-
-    /// <summary>
-    /// Reset values
-    /// </summary>
-    public void Reset()
+    private Vector2 curpos;
+    private void OnMoveDrawer()
     {
-        x = -1;
-        y = -1;
-        targetY = 0;
-        value = 0;
-    }
-
-    /// <summary>
-    /// Is equal to a integer pos
-    /// </summary>
-    /// <param name="posX"></param>
-    /// <param name="posY"></param>
-    /// <returns></returns>
-    public bool EqualTo(int posX, int posY)
-    {
-        return x == posX && y == posY;
-    }
-
-    /// <summary>
-    /// Is first select point or last selected point's neighbor: left, top, right, down
-    /// </summary>
-    /// <param name="posX"></param>
-    /// <param name="posY"></param>
-    /// <returns></returns>
-    public bool IsNeighbor(int posX, int posY)
-    {
-        if (x == -1 || y == -1)
-            return true;
-        return (posX == x && Mathf.Abs(posY-y)==1) || (posY == y && Mathf.Abs(posX-x)==1);
-    }
-
-    /// <summary>
-    /// Is same value type or generic value type
-    /// </summary>
-    /// <param name="v"></param>
-    /// <returns></returns>
-    public bool IsSimilarTo(int v)
-    {
-        return v == value;
+        //GUI.Label(new Rect(0,0,400,50), "上次选中："+m_lastOperate!=null?  m_lastOperate.ToString():"", new GUIStyle(){fontSize = 24});
+        GUI.Label(new Rect(0,60,400,50), string.Format("当前鼠标：{0}， {1}", curpos.ToString(), Camera.main.ScreenToWorldPoint(Input.mousePosition)+Vector3.one*2.5f),new GUIStyle(){fontSize = 24});
     }
 
 
-    public override string ToString()
+    public Vector3 GetRolePos()
     {
-        return string.Format("(x={0}, y={1}, v={2})", x, y, value);
+        return m_levelData.GetRolePos();
+    }
+
+    public Vector3 GetNextPos()
+    {
+        return m_levelData.GetNextPoint();
+    }
+
+    public void RecycleCubes()
+    {
+        var points = m_levelData.RecyclePointData();
+        if(points != null)
+            SendNotification(MsgType.ADD_CUBE, points);
+    }
+
+    public void GenegrateBottom()
+    {
+        var points = m_levelData.GenegrateBottom();
+        if (points != null || points.Count > 0)
+        {
+            SendNotification(MsgType.CHANGE_CUBE, points);
+        }
     }
 }

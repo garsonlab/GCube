@@ -27,6 +27,6 @@ public class LevelStartCommand : SimpleCommand
         playerMediator.CreateRole();//加载人物
         cameraMediator.LookAt(playerMediator.Role);//移动相机
         levelProxy.RegisterInputListener();//注册输入事件
-        SendNotification(MsgType.PLAYER_MOVE);
+        SendNotification(MsgType.PLAYER_MOVE, true);
     }
 }

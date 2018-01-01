@@ -40,82 +40,67 @@ public class LevelData
             for (int j = 0; j < height; j++)
             {
                 var point = m_pointPool.Get();
-                point.Reset(i, j, Random.Range(1, 7));
+                point.Reset(i, j, Random.Range(1, 5));
 
                 cols.Add(point);
             }
         }
     }
 
-    /// <summary>
-    /// 编号
-    /// </summary>
     public int Index { get { return m_index; } }
-    /// <summary>
-    /// 长度
-    /// </summary>
-    // public uint Width { get { return m_width; } }
-    /// <summary>
-    /// 高度
-    /// </summary>
-    // public uint Height { get { return m_height; } }
-    /// <summary>
-    /// 数据
-    /// </summary>
     public List<List<Point>> Data { get { return m_levelData; } }
 
-    /// <summary>
-    /// Get point value
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <returns></returns>
     public Point GetPoint(int x, int y)
     {
-        // if (x >= 0 && x < m_width && y >= 0 && y < m_height)
-        //     return m_levelData[x, y];
         if(x>=0 && x < m_levelData.Count && y >= 0 && y < m_levelData[x].Count)
             return m_levelData[x][y];
         return null;
     }
 
-    /// <summary>
-    /// Remove point data
-    /// </summary>
     public void RemovePoint(Point point)
     {
         point.Destroy();
+        m_levelData[point.x].Remove(point);
+        m_pointPool.Release(point);
     }
 
-    /// <summary>
-    /// Get changes when removed or added
-    /// </summary>
-    /// <param name="m_changePoints"></param>
-    public void GetChanges(List<Point> m_changePoints)
+
+    public void GetChanges(List<Point> m_changePoints, int from, int to)
     {
-        for (int i = 0; i < m_levelData.Count; i++)
+        //from = from - 5 >= 0 ? from - 5 : 0;//前后预留5
+        //to = to + 5 >= m_levelData.Count ? m_levelData.Count - 1 : to + 5;
+
+        int flag = 0;
+        for (int i = from; i <= to; i++)
         {
-            int flag = 0;
+            flag = 0;
             var cols = m_levelData[i];
             for (int j = 0; j < cols.Count; j++)
             {
-                if(cols[j].value > 0)
+                var point = cols[j];
+                if (point.value <= 0)//排除有0值
                 {
-                    if(cols[j].y != flag)
-                    {
-                        cols[j].targetY = flag;
-
-                        m_changePoints.Add(cols[j]);
-                    }
-                    flag++;
+                    point.Destroy();
+                    cols.Remove(point);
+                    m_pointPool.Release(point);
+                    j--;
                 }
                 else
                 {
-                    m_changePoints.Add(cols[j]);
+                    if (point.y != flag)
+                    {
+                        point.targetY = flag;
+                        m_changePoints.Add(point);
+                    }
+                    else
+                    {
+                        point.targetY = -1;
+                    }
+
+                    flag++;
                 }
             }
         }
-
     }
 
 
@@ -180,7 +165,7 @@ public class LevelData
             for (int j = 0; j < height; j++)
             {
                 var point = m_pointPool.Get();
-                point.Reset(x, j, Random.Range(1, 7));
+                point.Reset(x, j, Random.Range(1, 5));
 
                 cols.Add(point);
             }
@@ -191,32 +176,27 @@ public class LevelData
 
 
 
-    public List<Point> GenegrateBottom()
+    public Vector2 GenegrateBottom(List<Point> adds)
     {
-        int offset = 3;//距离中间范围
-        int addLen = 3;
-        if (m_levelData.Count > m_flag + offset)
+        int offset = 3;//距离人物位置长度
+        int addLen = 3;//添加长度
+        Vector2 range = Vector2.zero;
+
+        if (m_levelData.Count > m_flag + offset)//在添加范围内
         {
-            List<Point> changes = new List<Point>();
-            for (int i = m_flag + offset; i < m_flag + offset+addLen; i++)
+            range.x = m_flag + offset;
+            range.y = m_flag + offset + addLen;
+            range.y = range.y >= m_levelData.Count ? m_levelData.Count - 1 : range.y;
+
+            for (int i = (int)range.x; i < (int)range.y; i++)
             {
-                if (m_levelData.Count > i)
-                {
-                    var cols = m_levelData[i];
-                    var point = m_pointPool.Get();
-                    point.Reset(i, 0, Random.Range(1, 7));
-                    cols.Insert(0, point);
-
-                    for (int j = 0; j < cols.Count; j++)
-                    {
-                        cols[j].targetY = j;
-                        changes.Add(cols[j]);
-                    }
-                }
+                var cols = m_levelData[i];
+                var point = m_pointPool.Get();
+                point.Reset(i, 0, Random.Range(1, 5));
+                cols.Insert(0, point);
+                adds.Add(point);
             }
-            return changes;
         }
-
-        return null;
+        return range;
     }
 }

@@ -27,6 +27,7 @@ namespace Garson.Scripts.View
         private LevelProxy proxy;
         private Vector3 rolePos;//x当前第几列， y高度， z下一列比本列（1，高， -1低， 0相等）
         private Animation animation;
+        private bool isGenegrateBottom;
 
         public override void OnRegister()
         {
@@ -38,7 +39,8 @@ namespace Garson.Scripts.View
         {
             return new List<string>()
             {
-                MsgType.PLAYER_MOVE
+                MsgType.PLAYER_MOVE,
+                MsgType.CHANGE_CUBE
             };
         }
 
@@ -47,7 +49,14 @@ namespace Garson.Scripts.View
             switch (notification.Name)
             {
                 case MsgType.PLAYER_MOVE:
+                    //rolePos = proxy.GetNextPos();
+                    //if(rolePos.x > 0)
+                    isGenegrateBottom = (bool) notification.Body;
                     StartMove();
+                    break;
+                case MsgType.CHANGE_CUBE:
+                    rolePos = proxy.GetRolePos();
+                    Role.position = new Vector3(rolePos.x, rolePos.y, 0);// - new Vector3(3, 3, 0);
                     break;
             }
         }
@@ -70,15 +79,15 @@ namespace Garson.Scripts.View
 
         private void StartMove()
         {
-            Vector3 next = proxy.GetNextPos();//获取下一个可移动的点
-            if (next.x > 0)//如果下一列是可移动的
+            rolePos = proxy.GetNextPos();//获取下一个可移动的点
+            if (rolePos.x > 0)//如果下一列是可移动的
             {
-                next.z = 0;
-                MoveTo(next, true);//移动到下一列
+                rolePos.z = 0;
+                MoveTo(rolePos, true);//移动到下一列
                 return;
             }
 
-            if (next.z > 0)
+            if (rolePos.z > 0)
             {
                 PlayAnimation(ANIMATION_SORROW);
             }
@@ -86,7 +95,19 @@ namespace Garson.Scripts.View
             {
                 PlayAnimation(ANIMATION_FEAR);
             }
-            proxy.GenegrateBottom();//每次移动后添加底部增加
+
+            if (isGenegrateBottom)
+            {
+                //是增加底部引起的移动
+                isGenegrateBottom = false;
+            }
+            else
+            {
+                Timer.Instance.DelayCall(0.5f, objs =>
+                {
+                    proxy.GenegrateBottom();
+                });
+            }
         }
 
         private void MoveTo(Vector3 pos, bool animate)

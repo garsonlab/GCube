@@ -23,7 +23,7 @@ namespace Garson.Scripts.View
         }
 
 
-        public void SetFollowTarget(Transform target, float offset = 0.55f)
+        public void SetFollowTarget(Transform target, Vector3 offset)
         {
             cameraController.SetFollowTarget(target, offset);
         }
@@ -31,7 +31,7 @@ namespace Garson.Scripts.View
 
         public void LookAt(Transform transform)
         {
-            SetFollowTarget(transform);
+            SetFollowTarget(transform, new Vector3(3,0,-10));
             cameraController.LookAtTarget();
         }
     }

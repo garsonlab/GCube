@@ -6,6 +6,7 @@
 // ========================================================
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class Point
@@ -18,9 +19,6 @@ public class Point
     public int y { get { return m_y; } }
     public int value { get { return m_value; } }
 
-    /// <summary>
-    /// If more than 0, it's target Y. Otherwise less than 0 marked as delete
-    /// </summary>
     public int targetY;
     /// <summary>
     /// Target trans
@@ -77,12 +75,15 @@ public class Point
     {
         m_y = targetY;
         targetY = -1;
-        if(transform != null)
-            transform.localPosition = new Vector3(m_x, m_y, 0);
+        if (transform != null)
+            //transform.localPosition = new Vector3(m_x, m_y, 0);
+            transform.DOLocalMoveY(m_y, 0.2f);
     }
+
 
     public void Destroy()
     {
+        transform.gameObject.name = "Delete";
         if (transform != null)
             transform.gameObject.SetActive(false);
         m_value = 0;

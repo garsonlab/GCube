@@ -19,6 +19,7 @@ public class LevelProxy : Proxy
     private List<Point> m_selectPoints;
     private List<Point> m_changePoints; 
     private Point m_lastOperate;
+    private LevelMediator m_mediator;
 
     public LevelProxy() : base(NAME, null)
     {
@@ -60,7 +61,7 @@ public class LevelProxy : Proxy
         InputManager.Instance.AddListener(InputType.OnMoveBegin, OnTouchMoveBegin);
         InputManager.Instance.AddListener(InputType.OnMove, OnTouchMove);
         InputManager.Instance.AddListener(InputType.OnMoveEnd, OnTouchMoveEnd);
-        GUIManager.Instance.AddDrawer(NAME, OnMoveDrawer);
+        //GUIManager.Instance.AddDrawer(NAME, OnMoveDrawer);
     }
    
     /// <summary>
@@ -81,11 +82,15 @@ public class LevelProxy : Proxy
 
     private void OnTouchMove(Vector3 pos)
     {
+        pos.z = 10;
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(pos);
-        int x = Mathf.CeilToInt(worldPos.x+2.5f);
-        int y = Mathf.CeilToInt(worldPos.y+2.5f);
-        curpos.x = x;
-        curpos.y = y;
+        int x = Mathf.CeilToInt(worldPos.x - 0.5f);//+2.5f);
+        int y = Mathf.CeilToInt(worldPos.y - 0.5f);//+2.5f);
+
+        m_mediator.UpdateTemPosition(worldPos);
+        //curpos.x = x;
+        //curpos.y = y;
+        //Debug.Log(pos.ToString()+","+   worldPos.ToString() +"," +curpos.ToString());
         if (m_lastOperate != null && m_lastOperate.EqualTo(x, y)) //与上次操作相同
         {
             //Debug.Log("位置没变");
@@ -128,38 +133,58 @@ public class LevelProxy : Proxy
         }
         else
         {
-            //Debug.Log("Add");
             m_selectPoints.Add(point);
         }
         m_lastOperate = point;
 
-        SendNotification(MsgType.SELECT_CHANGED, m_selectPoints);
+        //SendNotification(MsgType.SELECT_CHANGED, m_selectPoints);
+        m_mediator.SetLinePositions(m_selectPoints);
     }
 
     private void OnTouchMoveEnd(Vector3 pos)
     {
         if (m_selectPoints.Count > 1)
         {
-            for (int i = 0; i < m_selectPoints.Count; i++)
+            SendNotification(MsgType.SELET_DELETE, m_selectPoints);//通知删除表现
+
+            int min = int.MaxValue, max = 0;
+            for (int i = 0; i < m_selectPoints.Count; i++)//删除数据
             {
+                if (m_selectPoints[i].x < min)
+                    min = m_selectPoints[i].x;
+                if (m_selectPoints[i].x > max)
+                    max = m_selectPoints[i].x;
                 m_levelData.RemovePoint(m_selectPoints[i]);
             }
 
-            m_changePoints.Clear();
-            m_levelData.GetChanges(m_changePoints);
+            Timer.Instance.DelayCall(0.2f, objs =>
+            {
+                m_changePoints.Clear();
+                m_levelData.GetChanges(m_changePoints, min, max);
 
-            SendNotification(MsgType.CHANGE_CUBE, m_changePoints);
+                SendNotification(MsgType.CHANGE_CUBE, m_changePoints);
+
+                Timer.Instance.DelayCall(0.3f, objects =>
+                {
+                    SendNotification(MsgType.PLAYER_MOVE, false);
+                });
+            });
         }
     }
 
 
-    private Vector2 curpos;
+    //private Vector2 curpos;
     private void OnMoveDrawer()
     {
-        //GUI.Label(new Rect(0,0,400,50), "上次选中："+m_lastOperate!=null?  m_lastOperate.ToString():"", new GUIStyle(){fontSize = 24});
-        GUI.Label(new Rect(0,60,400,50), string.Format("当前鼠标：{0}， {1}", curpos.ToString(), Camera.main.ScreenToWorldPoint(Input.mousePosition)+Vector3.one*2.5f),new GUIStyle(){fontSize = 24});
+       // GUI.Label(new Rect(0, 0, 400, 50), "上次选中：" + m_lastOperate != null ? m_lastOperate.ToString() : "", new GUIStyle() { fontSize = 24 });
+      //  GUI.Label(new Rect(0,60,400,50), string.Format("当前鼠标：{0}， {1}", curpos.ToString(), Camera.main.ScreenToWorldPoint(Input.mousePosition)-Vector3.one*0.5f),new GUIStyle(){fontSize = 24});
     }
 
+
+    public void SetMediator(LevelMediator mediator)
+    {
+        m_mediator = mediator;
+    }
 
     public Vector3 GetRolePos()
     {
@@ -180,10 +205,21 @@ public class LevelProxy : Proxy
 
     public void GenegrateBottom()
     {
-        var points = m_levelData.GenegrateBottom();
-        if (points != null || points.Count > 0)
+        m_changePoints.Clear();
+        Vector2 range = m_levelData.GenegrateBottom(m_changePoints);//生成底部
+        if (m_changePoints.Count > 0)
         {
-            SendNotification(MsgType.CHANGE_CUBE, points);
+            SendNotification(MsgType.ADD_CUBE, m_changePoints);
+        }
+        m_changePoints.Clear();//移动其他
+        m_levelData.GetChanges(m_changePoints, (int)range.x, (int)range.y);
+        if (m_changePoints.Count > 0)
+        {
+            SendNotification(MsgType.CHANGE_CUBE, m_changePoints);
+            Timer.Instance.DelayCall(0.3f, objects =>
+            {
+                SendNotification(MsgType.PLAYER_MOVE, true);
+            });
         }
     }
 }

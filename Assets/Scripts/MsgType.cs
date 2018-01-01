@@ -27,6 +27,10 @@ public class MsgType
     /// </summary>
     public const string SELECT_CHANGED = "select_change";
     /// <summary>
+    /// 选择删除
+    /// </summary>
+    public const string SELET_DELETE = "select_delete";
+    /// <summary>
     /// 方块改变
     /// </summary>
     public const string CHANGE_CUBE = "change_cube";

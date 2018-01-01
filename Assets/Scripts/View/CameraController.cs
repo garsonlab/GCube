@@ -16,7 +16,7 @@ public class CameraController : MonoBehaviour
     [SerializeField]
     private Transform m_followTarget;
     [SerializeField]
-    private float m_offset;
+    private Vector3 m_offset;
 
     private Vector3 m_cameraPos;
     //private Vector3 m_halfSize;
@@ -49,10 +49,12 @@ public class CameraController : MonoBehaviour
         //m_halfSize.x = m_halfSize.y * (Screen.width * 1.0f / Screen.height);
         //m_viewSize = m_halfSize * 2;
 
-        Vector3 position = new Vector3(0, m_offset, m_cameraTrans.position.z);
+       // Vector3 position = new Vector3(m_offset.x, m_offset.y, m_cameraTrans.position.z);
         if (m_followTarget != null)
         {
-            position = new Vector3(m_followTarget.position.x, m_followTarget.position.y + m_offset, m_cameraTrans.position.z);
+           // position = m_followTarget.position + m_offset;
+                //new Vector3(m_followTarget.position.x, m_followTarget.position.y + m_offset, m_cameraTrans.position.z);
+            return m_followTarget.position + m_offset;
         }
 
         //if (position.x < m_halfSize.x)
@@ -73,14 +75,16 @@ public class CameraController : MonoBehaviour
         //    position.y = closeMapSize.y - halfSizeClose.y;
         //}
 
-        return position;
+        return m_offset;
+        //return position;
     }
 
 
-    public void SetFollowTarget(Transform target, float offset)
+    public void SetFollowTarget(Transform target, Vector3 offset)
     {
         this.m_followTarget = target;
         this.m_offset = offset;
+        //m_offset.z = -10;
     }
 
     private void UpdateCameraPosition(Vector3 position, bool animate)
